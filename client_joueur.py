@@ -111,16 +111,16 @@ def set_to_str(un_ensemble):
         chaine += lettre
     return chaine
 
-def a_glouton(joueur):
+def a_glouton(joueurs):
     """verifie si le joueur possède glouton
 
     Args:
-        dictionnaire_joueurs (dict): dictionnaire pour un joueur
+        joueurs (dict): dictionnaire pour un joueur
 
     Returns:
         bool: True si possède glouton sinon False
     """    
-    if joueur.get_duree(joueur, '$') > 0: 
+    if joueur.get_duree(joueurs, '$') > 0: 
         return True
     else: 
         return False
@@ -155,6 +155,7 @@ def mon_IA(ma_couleur,carac_jeu, plan, les_joueurs):
     le_plateau=plateau.Plateau(plan)
 
     # IA complètement aléatoire
+
     # on met en place l'ensemble des variables
     objets_pacman = const.PROP_OBJET
     position_pacman = joueur.get_pos_pacman(joueurs[ma_couleur])
@@ -175,7 +176,7 @@ def mon_IA(ma_couleur,carac_jeu, plan, les_joueurs):
     dir_pacman_s = set_to_str(dir_pacman_e)
     try: 
         future_direction_pacman = random.choice(dir_pacman_s)
-    except: #cela veut dire aucune directions possibles
+    except: # cela veut dire pas de direction possible
         future_direction_pacman = random.choice("NESO")
 
     pos_possibles_fantome = plateau.directions_possibles(le_plateau, position_fantome)
@@ -201,7 +202,7 @@ def mon_IA(ma_couleur,carac_jeu, plan, les_joueurs):
                   max_objet = (min(dico_pos_pacman_obj[direction]['objets'])[0], min(dico_pos_pacman_obj[direction]['objets'])[1])
                   future_direction_pacman = direction
         except: 
-             continue
+             None
         
     if passemuraille: # si il a le passemuraille alors les murs ne "comptent" plus
         for direction in "NESO":
@@ -218,34 +219,36 @@ def mon_IA(ma_couleur,carac_jeu, plan, les_joueurs):
                        max_pts = 100
                        future_direction_pacman = lettre
             except: 
-                 continue
+                 None
 
 
     
-    if dir_pacman_e == set():
-        max_pts = 0 # si que des fantomes 
+    if dir_pacman_e == set(): # si il y a que des fantomes autour de nous
+        max_pts = 0 
+        stock_lettre = ""
         for lettre in pos_possibles_pacman:
-            if dico_pos_pacman[lettre]['objets'] != TypeError and dico_pos_pacman[lettre]['objets'] != [] and objets_pacman[dico_pos_pacman[lettre]['objets'][0][1]][0] > max_pts:
-                future_direction_pacman = lettre
-                max_pts = objets_pacman[dico_pos_pacman[lettre]['objets'][0][1]][0] # si aucun mur alors on avance vers objet 
-            elif dico_pos_pacman[lettre]['objets'] == TypeError or dico_pos_pacman[lettre]['objets'] == []:
-                future_direction_pacman = lettre
-            if  dico_pos_pacman[lettre]['objets'] != TypeError and dico_pos_pacman[lettre]['objets'] != []:
-               for objet in dico_pos_pacman[lettre]['objets']:
-                   if  objet == '&':
+           try:
+                if dico_pos_pacman[lettre]['objets'] != [] and objets_pacman[dico_pos_pacman[lettre]['objets'][0][1]][0] > max_pts: # on regarde les objets avec le plus de points
+                  future_direction_pacman = lettre
+                  max_pts = objets_pacman[dico_pos_pacman[lettre]['objets'][0][1]][0]
+                if  dico_pos_pacman[lettre]['objets'] != []: # on verifie qu'il n'y a pas de cerise 
+                  for objet in dico_pos_pacman[lettre]['objets']:
+                    if  objet == '&':
                        max_pts = 100
-                       future_direction_pacman = lettre
+                       stock_lettre = lettre # variable différente sinon si cerise mais objet proche au prochain tour la variable va effacer la direction
+           except: 
+               None           
+        if stock_lettre != "":
+            future_direction_pacman = stock_lettre # on reaffecte à la bonne variable 
 
-    if glouton:
+    if glouton: # si le pacman a glouton alors se dirige vers le fantome
         for direction in pos_possibles_pacman:
             try:
                if dico_pos_pacman[direction]['fantomes'] != []:
                  if dico_pos_pacman[direction]['fantomes'][0][1].upper() != ma_couleur and len(dico_pos_pacman[direction]['fantomes']) > 1 and fantome_proche(direction, le_plateau, position_pacman, dico_pos_pacman):
                      future_direction_pacman = direction
-            except:
+            except: # pour éviter les erreurs ou none est renvoyé
                 None
-
-
         
     
     dir_p= future_direction_pacman
@@ -256,8 +259,9 @@ def mon_IA(ma_couleur,carac_jeu, plan, les_joueurs):
     future_position_fantome = random.choice(dir_fantome_s) 
     position_fantome_parcours = future_position_fantome
     distance_avec_fantome = 20
+
     for direction in dir_fantome_s: # cherche le pacman le plus proche
-        if dico_pos_fantome[direction]['pacmans'] != []: # si liste pas vide
+        if dico_pos_fantome[direction]['pacmans'] != []: 
             if dico_pos_fantome[direction]['pacmans'][0][1] != ma_couleur: # on vérifie qu'il n'y a pas que notre pacman
                 for pacman in dico_pos_fantome[direction]['pacmans']:
                     try:
